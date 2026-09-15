@@ -11,19 +11,18 @@ jobs:
     name: Build, Lint & Auto-Commit Fixes
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Crucial permission flag allowing GitHub Actions to safely push fixed code back
+      contents: write
 
     steps:
       - name: Checkout Code Repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref || github.ref }} # Ensures correct branch selection for push actions
+          ref: ${{ github.head_ref || github.ref }}
 
       - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install Architecture Dependencies
         run: npm install
@@ -38,4 +37,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "style(auto-fix): automated linting and formatting refinements via workflow engine"
-          file_pattern: 'App.js'
+          file_pattern: 'App.js package-lock.json'
