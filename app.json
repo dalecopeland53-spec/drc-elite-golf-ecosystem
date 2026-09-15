@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "DRC Elite Golf Ecosystem",
+    "slug": "drc-elite-golf-ecosystem",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "android": {
+      "package": "com.dalecopeland.drcegolfecosystem",
+      "versionCode": 1,
+      "permissions": [
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "plugins": [
+      "expo-location"
+    ]
+  }
+}
