@@ -1,4 +1,4 @@
-name: CaddieOS Code Validation
+name: CaddieOS Code Validation & Auto-Fix
 
 on:
   push:
@@ -7,24 +7,35 @@ on:
     branches: [ main, master ]
 
 jobs:
-  validate:
-    name: Build and Parse Check
+  validate-and-fix:
+    name: Build, Lint & Auto-Commit Fixes
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Crucial permission flag allowing GitHub Actions to safely push fixed code back
 
     steps:
       - name: Checkout Code Repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref }} # Ensures correct branch selection for push actions
 
       - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-size: '20'
+          node-version: '20'
           cache: 'npm'
 
-      - name: Install Project Dependencies
-        run: |
-          npm init -y
-          npm install react react-native expo-linear-gradient expo-location @react-native-voice/voice react-native-tts @react-native-async-storage/async-storage react-native-safe-area-context
+      - name: Install Architecture Dependencies
+        run: npm install
 
       - name: Verify JavaScript Compilation Syntax
         run: node -c App.js
+
+      - name: Run ESLint Auto-Fix Matrix
+        run: npx eslint App.js --fix
+
+      - name: Auto-Commit and Push Refined Source Code
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style(auto-fix): automated linting and formatting refinements via workflow engine"
+          file_pattern: 'App.js'
