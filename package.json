@@ -1,22 +1,27 @@
 {
-  "name": "caddie-os",
+  "name": "drc-elite-golf-ecosystem",
   "version": "1.0.0",
-  "main": "App.js",
+  "private": true,
+  "main": "node_modules/expo/AppEntry.js",
   "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "prebuild": "expo prebuild",
     "lint": "eslint App.js"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "*",
-    "@react-native-voice/voice": "*",
-    "expo-linear-gradient": "*",
-    "expo-location": "*",
-    "react": "*",
-    "react-native": "*",
-    "react-native-safe-area-context": "*",
-    "react-native-tts": "*"
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-voice/voice": "3.2.4",
+    "expo": "~55.0.0",
+    "expo-linear-gradient": "~15.0.7",
+    "expo-location": "~19.0.7",
+    "react": "19.2.0",
+    "react-native": "0.83.2",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-tts": "4.1.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0",
+    "@babel/core": "^7.28.0",
     "eslint": "^8.57.0",
     "eslint-config-universe": "^12.0.1"
   }
