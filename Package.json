@@ -1,0 +1,23 @@
+{
+  "name": "caddie-os",
+  "version": "1.0.0",
+  "main": "App.js",
+  "scripts": {
+    "lint": "eslint App.js"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "*",
+    "@react-native-voice/voice": "*",
+    "expo-linear-gradient": "*",
+    "expo-location": "*",
+    "react": "*",
+    "react-native": "*",
+    "react-native-safe-area-context": "*",
+    "react-native-tts": "*"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0",
+    "eslint": "^8.57.0",
+    "eslint-config-universe": "^12.0.1"
+  }
+}
