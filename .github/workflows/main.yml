@@ -1,0 +1,30 @@
+name: CaddieOS Code Validation
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  validate:
+    name: Build and Parse Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-size: '20'
+          cache: 'npm'
+
+      - name: Install Project Dependencies
+        run: |
+          npm init -y
+          npm install react react-native expo-linear-gradient expo-location @react-native-voice/voice react-native-tts @react-native-async-storage/async-storage react-native-safe-area-context
+
+      - name: Verify JavaScript Compilation Syntax
+        run: node -c App.js
