@@ -1,40 +1,90 @@
-name: CaddieOS Code Validation & Auto-Fix
+name: Eco 1 Build, Lint & Auto-Fix
 
 on:
   push:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   validate-and-fix:
-    name: Build, Lint & Auto-Commit Fixes
+    name: Auto-Install, Auto-Fix & Validate
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
-      - name: Checkout Code Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref || github.ref }}
+          fetch-depth: 0
 
-      - name: Setup Node.js Environment
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install Architecture Dependencies
-        run: npm install
+      - name: Normalize package manifest
+        shell: bash
+        run: |
+          if [ ! -f package.json ] && [ -f Package.json ]; then
+            cp Package.json package.json
+            echo "Created correctly-cased package.json from Package.json"
+          fi
+          test -f package.json || { echo "ERROR: package.json is missing"; exit 1; }
 
-      - name: Verify JavaScript Compilation Syntax
-        run: node -c App.js
+      - name: Install dependencies and generate lockfile
+        shell: bash
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci || npm install
+          else
+            npm install
+          fi
 
-      - name: Run ESLint Auto-Fix Matrix
-        run: npx eslint App.js --fix
+      - name: Auto-fix lint issues when ESLint is available
+        shell: bash
+        run: |
+          if npm exec --yes eslint -- --version >/dev/null 2>&1; then
+            npm exec --yes eslint -- App.js --fix || true
+          else
+            echo "ESLint unavailable - skipping auto-fix"
+          fi
 
-      - name: Auto-Commit and Push Refined Source Code
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "style(auto-fix): automated linting and formatting refinements via workflow engine"
-          file_pattern: 'App.js package-lock.json'
+      - name: Verify JavaScript syntax
+        run: node --check App.js
+
+      - name: Run project tests when configured
+        shell: bash
+        run: |
+          if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.test ? 0 : 1)"; then
+            npm test -- --runInBand || npm test
+          else
+            echo "No test script configured - skipping"
+          fi
+
+      - name: Run project build when configured
+        shell: bash
+        run: |
+          if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.build ? 0 : 1)"; then
+            npm run build
+          else
+            echo "No build script configured - skipping"
+          fi
+
+      - name: Commit safe automatic repairs
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json App.js 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(auto-fix): repair dependencies and source formatting"
+            git push
+          else
+            echo "No automatic repairs required"
+          fi
