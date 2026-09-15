@@ -1,89 +1,83 @@
-name: Eco 1 Build, Lint & Auto-Fix
+name: Eco 1 Auto-Fix & Android APK
 
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  validate-and-fix:
-    name: Auto-Install, Auto-Fix & Validate
+  build-android:
+    name: Auto-Fix, Build & Package APK
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref || github.ref }}
           fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
 
-      - name: Normalize package manifest
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Install dependencies
         shell: bash
         run: |
-          if [ ! -f package.json ] && [ -f Package.json ]; then
-            cp Package.json package.json
-            echo "Created correctly-cased package.json from Package.json"
-          fi
-          test -f package.json || { echo "ERROR: package.json is missing"; exit 1; }
+          npm ci || npm install
 
-      - name: Install dependencies and generate lockfile
+      - name: Expo dependency health check and repair
         shell: bash
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci || npm install
-          else
-            npm install
-          fi
+          npx expo install --fix --non-interactive || true
 
-      - name: Auto-fix lint issues when ESLint is available
+      - name: Auto-fix lint issues
         shell: bash
         run: |
-          if npm exec --yes eslint -- --version >/dev/null 2>&1; then
-            npm exec --yes eslint -- App.js --fix || true
-          else
-            echo "ESLint unavailable - skipping auto-fix"
-          fi
+          npm exec --yes eslint -- App.js --fix || true
 
       - name: Verify JavaScript syntax
         run: node --check App.js
 
-      - name: Run project tests when configured
-        shell: bash
-        run: |
-          if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.test ? 0 : 1)"; then
-            npm test -- --runInBand || npm test
-          else
-            echo "No test script configured - skipping"
-          fi
+      - name: Generate Android native project
+        run: npx expo prebuild --platform android --clean --non-interactive
 
-      - name: Run project build when configured
-        shell: bash
+      - name: Build installable debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Stage APK
         run: |
-          if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.build ? 0 : 1)"; then
-            npm run build
-          else
-            echo "No build script configured - skipping"
-          fi
+          mkdir -p dist
+          cp android/app/build/outputs/apk/debug/app-debug.apk dist/Eco1.apk
+
+      - name: Upload Eco 1 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Eco1-Android-APK
+          path: dist/Eco1.apk
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Commit safe automatic repairs
-        if: github.event_name == 'push'
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json App.js 2>/dev/null || true
+          git add package.json package-lock.json App.js app.json 2>/dev/null || true
           if ! git diff --cached --quiet; then
-            git commit -m "chore(auto-fix): repair dependencies and source formatting"
+            git commit -m "chore(auto-fix): repair Eco 1 build configuration"
             git push
           else
             echo "No automatic repairs required"
